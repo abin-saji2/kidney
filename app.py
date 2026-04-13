@@ -1,6 +1,6 @@
 import streamlit as st
 from PIL import Image
-import random
+import requests
 from fpdf import FPDF
 import sqlite3
 from datetime import datetime
@@ -18,8 +18,6 @@ gender = st.selectbox("Gender", ["Male", "Female", "Other"])
 
 # 📤 Upload Image
 uploaded_file = st.file_uploader("Upload Kidney Image", type=["jpg", "png", "jpeg"])
-
-classes = ["Cyst", "Normal", "Stone", "Tumor"]
 
 # 🗄️ Database setup
 conn = sqlite3.connect("history.db", check_same_thread=False)
@@ -63,13 +61,22 @@ def generate_pdf(name, age, gender, prediction, confidence):
 
     return file_name
 
-# 🔍 Prediction
+# 🔍 Prediction using API
 if uploaded_file is not None:
+
     img = Image.open(uploaded_file)
     st.image(img, caption="Uploaded Image")
 
-    prediction = random.choice(classes)
-    confidence = random.uniform(80, 99)
+    # 🔥 CALL API (LOCAL)
+    response = requests.post(
+        "http://127.0.0.1:8000/predict",
+        files={"file": uploaded_file.getvalue()}
+    )
+
+    result = response.json()
+
+    prediction = result["prediction"]
+    confidence = result["confidence"]
 
     st.success(f"Prediction: {prediction}")
     st.info(f"Confidence: {confidence:.2f}%")
